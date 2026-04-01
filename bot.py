@@ -160,9 +160,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"──────────────────\n\n"
             f"You've had a taste of what anonymity and prestige feels like.\n\n"
             f"If you'd like to own this number — or choose another from our collection — "
-            f"reach out directly and we'll make it happen.\n\n"
-            f"──────────────────\n"
-            f"{DIAMOND}  <i>Contact: @YourUsername</i>",  # Replace with your actual username
+            f"reach out directly and we'll make it happen.",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(
                 [[InlineKeyboardButton("‹  Back", callback_data="my_status")]]
