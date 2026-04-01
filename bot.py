@@ -95,9 +95,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db.ensure_user(user.id, user.username or user.first_name)
 
     keyboard = [
-        [InlineKeyboardButton("Claim Free Trial", callback_data="claim_trial")],
-        [InlineKeyboardButton("My Status", callback_data="my_status"),
-         InlineKeyboardButton("About", callback_data="about")],
+        [InlineKeyboardButton("✦  Claim Free Trial", callback_data="claim_trial")],
+        [InlineKeyboardButton("◈  My Status", callback_data="my_status"),
+         InlineKeyboardButton("◉  About", callback_data="about")],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -141,15 +141,15 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await show_status(user.id, reply)
 
     elif data == "about":
-        keyboard = [[InlineKeyboardButton("← Back", callback_data="back_home")]]
+        keyboard = [[InlineKeyboardButton("‹  Back", callback_data="back_home")]]
         await reply(ABOUT_MSG, parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup(keyboard))
 
     elif data == "back_home":
         keyboard = [
-            [InlineKeyboardButton("Claim Free Trial", callback_data="claim_trial")],
-            [InlineKeyboardButton("My Status", callback_data="my_status"),
-             InlineKeyboardButton("About", callback_data="about")],
+            [InlineKeyboardButton("✦  Claim Free Trial", callback_data="claim_trial")],
+            [InlineKeyboardButton("◈  My Status", callback_data="my_status"),
+             InlineKeyboardButton("◉  About", callback_data="about")],
         ]
         await reply(WELCOME_MSG, parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup(keyboard))
@@ -165,7 +165,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"{DIAMOND}  <i>Contact: @YourUsername</i>",  # Replace with your actual username
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("← Back", callback_data="my_status")]]
+                [[InlineKeyboardButton("‹  Back", callback_data="my_status")]]
             )
         )
 
@@ -177,8 +177,8 @@ async def handle_claim(user, reply_fn, context):
             NOT_SUBSCRIBED_MSG,
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("Subscribe", url=CHANNEL_INVITE_LINK)],
-                [InlineKeyboardButton("Done — Check Me", callback_data="claim_trial")]
+                [InlineKeyboardButton("✦  Subscribe to Channel", url=CHANNEL_INVITE_LINK)],
+                [InlineKeyboardButton("◈  Done — Check Me", callback_data="claim_trial")]
             ])
         )
         return
@@ -193,7 +193,7 @@ async def handle_claim(user, reply_fn, context):
             f"<i>Expires in {hours}h</i>",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("View Status", callback_data="my_status")]]
+                [[InlineKeyboardButton("◈  View Status", callback_data="my_status")]]
             )
         )
         return
@@ -205,7 +205,7 @@ async def handle_claim(user, reply_fn, context):
             f"<i>Reach out if you'd like to own a number permanently.</i>",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("Get in Touch", callback_data="extend_trial")]]
+                [[InlineKeyboardButton("✦  Get in Touch", callback_data="extend_trial")]]
             )
         )
         return
@@ -218,7 +218,7 @@ async def handle_claim(user, reply_fn, context):
             f"<i>Check back in a few days — slots open as trials expire.</i>",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("Home", callback_data="back_home")]]
+                [[InlineKeyboardButton("‹  Home", callback_data="back_home")]]
             )
         )
         return
@@ -250,8 +250,8 @@ async def handle_claim(user, reply_fn, context):
         f"If you love it — it can be yours permanently.</i>",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("My Status", callback_data="my_status"),
-             InlineKeyboardButton("Keep This Number", callback_data="extend_trial")]
+            [InlineKeyboardButton("◈  My Status", callback_data="my_status"),
+             InlineKeyboardButton("✦  Keep This Number", callback_data="extend_trial")]
         ])
     )
 
@@ -266,13 +266,13 @@ async def show_status(user_id: int, reply_fn):
                 f"Your 72-hour window has closed.\n"
                 f"<i>Contact us to own a number permanently.</i>"
             )
-            keyboard = [[InlineKeyboardButton("Get in Touch", callback_data="extend_trial")]]
+            keyboard = [[InlineKeyboardButton("✦  Get in Touch", callback_data="extend_trial")]]
         else:
             msg = (
                 f"{DIAMOND} <b>No active trial</b>\n\n"
                 f"<i>You haven't claimed yours yet.</i>"
             )
-            keyboard = [[InlineKeyboardButton("Claim Free Trial", callback_data="claim_trial")]]
+            keyboard = [[InlineKeyboardButton("✦  Claim Free Trial", callback_data="claim_trial")]]
 
         await reply_fn(msg, parse_mode="HTML",
                        reply_markup=InlineKeyboardMarkup(keyboard))
@@ -300,8 +300,8 @@ async def show_status(user_id: int, reply_fn):
         f"{DIAMOND}  <i>Expires {expires.strftime('%d %b %Y, %H:%M')} UTC</i>",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("Keep This Number", callback_data="extend_trial"),
-             InlineKeyboardButton("Home", callback_data="back_home")]
+            [InlineKeyboardButton("✦  Keep This Number", callback_data="extend_trial"),
+             InlineKeyboardButton("‹  Home", callback_data="back_home")]
         ])
     )
 
@@ -324,7 +324,7 @@ async def notify_warning(context: ContextTypes.DEFAULT_TYPE):
             ),
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("Keep This Number", callback_data="extend_trial")]]
+                [[InlineKeyboardButton("✦  Keep This Number", callback_data="extend_trial")]]
             )
         )
     except Exception as e:
@@ -348,7 +348,7 @@ async def notify_expiry(context: ContextTypes.DEFAULT_TYPE):
             ),
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("Own a Number", callback_data="extend_trial")]]
+                [[InlineKeyboardButton("✦  Own a Number", callback_data="extend_trial")]]
             )
         )
     except Exception as e:
