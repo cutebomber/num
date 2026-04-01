@@ -200,7 +200,10 @@ async def handle_claim(user, reply_fn, context):
             "😔 *No numbers available right now*\n\n"
             "All our collectible numbers are currently on trial.\n"
             "Check back soon — trials expire every 3 days!",
-            parse_mode="Markdown"
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton("🏠 Home", callback_data="back_home")]]
+            )
         )
         return
 
