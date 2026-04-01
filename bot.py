@@ -12,7 +12,7 @@ from telegram.ext import (
     ContextTypes, JobQueue
 )
 from database import Database
-from config import BOT_TOKEN, ADMIN_IDS, TRIAL_DAYS, BOT_USERNAME
+from config import BOT_TOKEN, ADMIN_IDS, TRIAL_DAYS, BOT_USERNAME, REQUIRED_CHANNEL, CHANNEL_INVITE_LINK
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -22,10 +22,28 @@ logger = logging.getLogger(__name__)
 
 db = Database()
 
+# ─── HELPERS ─────────────────────────────────────────────────────────────────
+
+async def is_subscribed(user_id: int, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    """Returns True if the user is a member of REQUIRED_CHANNEL."""
+    try:
+        member = await context.bot.get_chat_member(
+            chat_id=f"@{REQUIRED_CHANNEL}", user_id=user_id
+        )
+        return member.status in ("member", "administrator", "creator")
+    except Exception:
+        return False
+
+NOT_SUBSCRIBED_MSG = (
+    "🔒 *Channel Subscription Required*\n\n"
+    "To claim your free trial on *Free888Robot*, you must first join our channel.\n\n"
+    "👇 Join below, then tap ✅ *Check Subscription* to continue."
+)
+
 # ─── MESSAGES ────────────────────────────────────────────────────────────────
 
 WELCOME_MSG = """
-✨ *Welcome to LuxNumbers* ✨
+✨ *Welcome to Free888Robot* ✨
 
 You've just stepped into an exclusive world of *anonymous & collectible Telegram numbers*.
 
@@ -40,17 +58,18 @@ Ready to feel what luxury anonymity is like?
 """
 
 ABOUT_MSG = """
-💎 *About LuxNumbers*
+💎 *About Free888Robot*
 
 Our collection includes:
-• 🔢 *Collectible Numbers* — rare patterns (111, 777, etc.)
+• 🔢 *Collectible Numbers* — rare patterns (111, 777, 888 etc.)
 • 🕵️ *Anonymous Numbers* — untraceable, clean history
 • 📛 *Premium Usernames* — short, memorable handles
 
 *How the trial works:*
-1. Claim your free number below
-2. Use it for 3 full days
-3. Decide if you want to keep it
+1. Join our channel 📢
+2. Claim your free number
+3. Use it for 3 full days
+4. Decide if you want to keep it
 
 One trial per user. Numbers are limited.
 """
@@ -135,6 +154,17 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_claim(user, reply_fn, context):
+    # ── Step 1: Channel subscription gate ──
+    if not await is_subscribed(user.id, context):
+        await reply_fn(
+            NOT_SUBSCRIBED_MSG,
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("📢 Join Channel", url=CHANNEL_INVITE_LINK)],
+                [InlineKeyboardButton("✅ Check Subscription", callback_data="claim_trial")]
+            ])
+        )
+        return
     existing = db.get_active_trial(user.id)
     if existing:
         expires = datetime.fromisoformat(existing["expires_at"])
