@@ -48,25 +48,44 @@ async def is_subscribed(user_id: int, context: ContextTypes.DEFAULT_TYPE) -> boo
         return False
 
 NOT_SUBSCRIBED_MSG = (
-    f"{TG} <b>One step away</b>\n\n"
-    f"Subscribe to our channel to unlock your free trial.\n\n"
-    f"<i>Join below, then tap</i> <b>Done — Check Me</b>."
+    f"{TG} <b>One last step</b>\n"
+    f"──────────────────\n\n"
+    f"Our free trials are exclusive to channel members.\n\n"
+    f"Subscribe below to unlock your anonymous number — "
+    f"it takes 5 seconds and costs nothing.\n\n"
+    f"──────────────────\n"
+    f"<i>Already subscribed? Tap</i> <b>Done — Check Me</b>."
 )
 
 # ─── MESSAGES ────────────────────────────────────────────────────────────────
 
 WELCOME_MSG = (
-    f"{DIAMOND} <b>Free888</b>\n\n"
-    f"Anonymous &amp; collectible numbers — yours to try, free for 3 days.\n\n"
-    f"<i>One trial per account. Numbers are limited.</i>"
+    f"{DIAMOND} <b>Free888 — Anonymous Numbers</b>\n"
+    f"──────────────────\n\n"
+    f"You've been given access to something rare.\n\n"
+    f"Our collection of <b>anonymous &amp; collectible</b> Telegram numbers — "
+    f"used by people who value privacy, prestige, and identity.\n\n"
+    f"{TICK}  Untraceable. Pattern-based. Exclusively yours.\n"
+    f"{TICK}  No commitment. No payment. Just 72 hours of luxury.\n"
+    f"{TICK}  One free trial, per person, ever.\n\n"
+    f"──────────────────\n"
+    f"{CROWN}  <i>Claim yours before someone else does.</i>"
 )
 
 ABOUT_MSG = (
-    f"{CROWN} <b>How it works</b>\n\n"
-    f"Join our channel · Claim a number · Use it for 72 hours.\n\n"
-    f"Our numbers are anonymous, pattern-based, and untraceable — "
-    f"built for those who value privacy and prestige.\n\n"
-    f"<i>Liked it? Reach out to own one permanently.</i>"
+    f"{CROWN} <b>What makes these numbers special?</b>\n"
+    f"──────────────────\n\n"
+    f"{DIAMOND}  <b>Collectible</b> — rare patterns like 888, 777, 111.\n"
+    f"{TG}  <b>Anonymous</b> — no name, no trace, clean history.\n"
+    f"{TICK}  <b>Yours to trial</b> — 72 hours, completely free.\n\n"
+    f"──────────────────\n\n"
+    f"<b>How it works</b>\n\n"
+    f"<b>1.</b> Subscribe to our channel\n"
+    f"<b>2.</b> Tap <i>Claim Free Trial</i>\n"
+    f"<b>3.</b> Receive your exclusive number instantly\n"
+    f"<b>4.</b> Decide if you want to own it permanently\n\n"
+    f"──────────────────\n"
+    f"<i>Numbers are limited. Trials are first-come, first-served.</i>"
 )
 
 # ─── COMMANDS ────────────────────────────────────────────────────────────────
@@ -137,9 +156,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data == "extend_trial":
         await reply(
-            f"{CROWN} <b>Own your number</b>\n\n"
-            f"Reach out directly and we'll arrange it.\n\n"
-            f"<i>Contact: @YourUsername</i>",  # Replace with your actual username
+            f"{CROWN} <b>Make it permanently yours</b>\n"
+            f"──────────────────\n\n"
+            f"You've had a taste of what anonymity and prestige feels like.\n\n"
+            f"If you'd like to own this number — or choose another from our collection — "
+            f"reach out directly and we'll make it happen.\n\n"
+            f"──────────────────\n"
+            f"{DIAMOND}  <i>Contact: @YourUsername</i>",  # Replace with your actual username
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(
                 [[InlineKeyboardButton("← Back", callback_data="my_status")]]
@@ -216,13 +239,18 @@ async def handle_claim(user, reply_fn, context):
     )
 
     await reply_fn(
-        f"{TICK} <b>Trial activated</b>\n\n"
+        f"{CROWN} <b>Your number is ready</b>\n"
+        f"──────────────────\n\n"
+        f"Here is your exclusive anonymous number:\n\n"
         f"<code>{number}</code>\n\n"
-        f"Valid for 72 hours · expires {expires_at.strftime('%d %b, %H:%M')} UTC\n\n"
-        f"<i>You'll be notified 12 hours before it ends.</i>",
+        f"──────────────────\n\n"
+        f"{TICK}  Trial active — 72 hours from now\n"
+        f"{DIAMOND}  Expires <b>{expires_at.strftime('%d %b %Y, %H:%M')} UTC</b>\n\n"
+        f"<i>You will receive a reminder 12 hours before it expires.\n"
+        f"If you love it — it can be yours permanently.</i>",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("Status", callback_data="my_status"),
+            [InlineKeyboardButton("My Status", callback_data="my_status"),
              InlineKeyboardButton("Keep This Number", callback_data="extend_trial")]
         ])
     )
@@ -261,10 +289,15 @@ async def show_status(user_id: int, reply_fn):
     progress_bar = "█" * progress_filled + "░" * (TRIAL_DAYS - progress_filled)
 
     await reply_fn(
-        f"{TICK} <b>Active trial</b>\n\n"
+        f"{TICK} <b>Your active trial</b>\n"
+        f"──────────────────\n\n"
+        f"<b>Number</b>\n"
         f"<code>{trial['number']}</code>\n\n"
-        f"<code>{progress_bar}</code>  {days}d {hours}h {mins}m remaining\n\n"
-        f"<i>Expires {expires.strftime('%d %b, %H:%M')} UTC</i>",
+        f"<b>Time remaining</b>\n"
+        f"<code>{progress_bar}</code>\n"
+        f"{days}d {hours}h {mins}m left\n\n"
+        f"──────────────────\n"
+        f"{DIAMOND}  <i>Expires {expires.strftime('%d %b %Y, %H:%M')} UTC</i>",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("Keep This Number", callback_data="extend_trial"),
@@ -281,9 +314,13 @@ async def notify_warning(context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=data["user_id"],
             text=(
-                f"{DIAMOND} <b>12 hours remaining</b>\n\n"
-                f"<code>{data['number']}</code> expires soon.\n\n"
-                f"<i>Want to keep it? Reach out before it's gone.</i>"
+                f"{DIAMOND} <b>12 hours left on your trial</b>\n"
+                f"──────────────────\n\n"
+                f"Your anonymous number\n"
+                f"<code>{data['number']}</code>\n"
+                f"expires in 12 hours.\n\n"
+                f"──────────────────\n"
+                f"{CROWN}  <i>Loved the experience? Reach out and keep it forever.</i>"
             ),
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(
@@ -301,13 +338,17 @@ async def notify_expiry(context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=data["user_id"],
             text=(
-                f"{CROSS} <b>Trial ended</b>\n\n"
+                f"{CROSS} <b>Your trial has ended</b>\n"
+                f"──────────────────\n\n"
                 f"<code>{data['number']}</code> has been returned to the pool.\n\n"
-                f"<i>Enjoyed the experience? It can be yours permanently.</i>"
+                f"We hope you felt what true anonymity is like.\n\n"
+                f"──────────────────\n"
+                f"{CROWN}  <i>This number — or another from our collection — "
+                f"can still be yours permanently.</i>"
             ),
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("Get in Touch", callback_data="extend_trial")]]
+                [[InlineKeyboardButton("Own a Number", callback_data="extend_trial")]]
             )
         )
     except Exception as e:
