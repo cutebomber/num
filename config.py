@@ -20,3 +20,7 @@ REQUIRED_CHANNEL = "LuxuryYatch"   # ← replace this
 
 # Channel invite link shown to users who aren't subscribed
 CHANNEL_INVITE_LINK = "https://t.me/LuxuryYatch"  # ← replace this
+
+# Web panel password — change this before going live
+PANEL_PASSWORD = "overpower"  # ← replace this
+ 
