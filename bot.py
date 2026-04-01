@@ -22,6 +22,19 @@ logger = logging.getLogger(__name__)
 
 db = Database()
 
+# ─── CUSTOM EMOJIS ───────────────────────────────────────────────────────────
+# Usage: e["bot"], e["tick"], e["cross"], e["tg"], e["diamond"], e["crown"]
+
+def E(emoji_id: str, fallback: str = "·") -> str:
+    return f'<tg-emoji emoji-id="{emoji_id}">{fallback}</tg-emoji>'
+
+BOT      = E("5985780596268339498", "🤖")
+TICK     = E("5985596818912712352", "✅")
+CROSS    = E("5985346521103604145", "❌")
+TG       = E("5875465628285931233", "✈")
+DIAMOND  = E("6028530359975548369", "💎")
+CROWN    = E("5807868868886009920", "👑")
+
 # ─── HELPERS ─────────────────────────────────────────────────────────────────
 
 async def is_subscribed(user_id: int, context: ContextTypes.DEFAULT_TYPE) -> bool:
@@ -35,44 +48,26 @@ async def is_subscribed(user_id: int, context: ContextTypes.DEFAULT_TYPE) -> boo
         return False
 
 NOT_SUBSCRIBED_MSG = (
-    "🔒 *Channel Subscription Required*\n\n"
-    "To claim your free trial on *Free888Robot*, you must first join our channel.\n\n"
-    "👇 Join below, then tap ✅ *Check Subscription* to continue."
+    f"{TG} <b>One step away</b>\n\n"
+    f"Subscribe to our channel to unlock your free trial.\n\n"
+    f"<i>Join below, then tap</i> <b>Done — Check Me</b>."
 )
 
 # ─── MESSAGES ────────────────────────────────────────────────────────────────
 
-WELCOME_MSG = """
-✨ *Welcome to Free888Robot* ✨
+WELCOME_MSG = (
+    f"{DIAMOND} <b>Free888</b>\n\n"
+    f"Anonymous &amp; collectible numbers — yours to try, free for 3 days.\n\n"
+    f"<i>One trial per account. Numbers are limited.</i>"
+)
 
-You've just stepped into an exclusive world of *anonymous & collectible Telegram numbers*.
-
-These aren't ordinary numbers — they're rare, prestigious fragments of digital identity.
-
-For a limited time, you can claim a *FREE 3-day trial* and experience:
-• 🔒 Complete anonymity
-• 💎 Exclusive collectible number
-• 👑 Premium feel — zero commitment
-
-Ready to feel what luxury anonymity is like?
-"""
-
-ABOUT_MSG = """
-💎 *About Free888Robot*
-
-Our collection includes:
-• 🔢 *Collectible Numbers* — rare patterns (111, 777, 888 etc.)
-• 🕵️ *Anonymous Numbers* — untraceable, clean history
-• 📛 *Premium Usernames* — short, memorable handles
-
-*How the trial works:*
-1. Join our channel 📢
-2. Claim your free number
-3. Use it for 3 full days
-4. Decide if you want to keep it
-
-One trial per user. Numbers are limited.
-"""
+ABOUT_MSG = (
+    f"{CROWN} <b>How it works</b>\n\n"
+    f"Join our channel · Claim a number · Use it for 72 hours.\n\n"
+    f"Our numbers are anonymous, pattern-based, and untraceable — "
+    f"built for those who value privacy and prestige.\n\n"
+    f"<i>Liked it? Reach out to own one permanently.</i>"
+)
 
 # ─── COMMANDS ────────────────────────────────────────────────────────────────
 
@@ -81,28 +76,27 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db.ensure_user(user.id, user.username or user.first_name)
 
     keyboard = [
-        [InlineKeyboardButton("💎 Claim Free Trial", callback_data="claim_trial")],
-        [InlineKeyboardButton("📋 My Status", callback_data="my_status"),
-         InlineKeyboardButton("ℹ️ About", callback_data="about")],
+        [InlineKeyboardButton("Claim Free Trial", callback_data="claim_trial")],
+        [InlineKeyboardButton("My Status", callback_data="my_status"),
+         InlineKeyboardButton("About", callback_data="about")],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(
         WELCOME_MSG,
-        parse_mode="Markdown",
+        parse_mode="HTML",
         reply_markup=reply_markup
     )
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🤖 *LuxNumbers Bot Commands*\n\n"
-        "/start — Main menu\n"
-        "/status — Check your current trial\n"
-        "/about — Learn about our numbers\n"
-        "/help — This message\n\n"
-        "Questions? Contact @" + ADMIN_IDS[0] if ADMIN_IDS else "the admin.",
-        parse_mode="Markdown"
+        f"{BOT} <b>Free888Robot</b>\n\n"
+        f"/start — Main menu\n"
+        f"/status — Check your current trial\n"
+        f"/about — How it works\n"
+        f"/help — This message",
+        parse_mode="HTML"
     )
 
 
@@ -128,27 +122,27 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await show_status(user.id, reply)
 
     elif data == "about":
-        keyboard = [[InlineKeyboardButton("⬅️ Back", callback_data="back_home")]]
-        await reply(ABOUT_MSG, parse_mode="Markdown",
+        keyboard = [[InlineKeyboardButton("← Back", callback_data="back_home")]]
+        await reply(ABOUT_MSG, parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup(keyboard))
 
     elif data == "back_home":
         keyboard = [
-            [InlineKeyboardButton("💎 Claim Free Trial", callback_data="claim_trial")],
-            [InlineKeyboardButton("📋 My Status", callback_data="my_status"),
-             InlineKeyboardButton("ℹ️ About", callback_data="about")],
+            [InlineKeyboardButton("Claim Free Trial", callback_data="claim_trial")],
+            [InlineKeyboardButton("My Status", callback_data="my_status"),
+             InlineKeyboardButton("About", callback_data="about")],
         ]
-        await reply(WELCOME_MSG, parse_mode="Markdown",
+        await reply(WELCOME_MSG, parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup(keyboard))
 
     elif data == "extend_trial":
         await reply(
-            "💼 *Interested in keeping your number?*\n\n"
-            "Send a message to our team and we'll work out a deal just for you.\n\n"
-            "Contact: @YourUsername",  # Replace with your actual username
-            parse_mode="Markdown",
+            f"{CROWN} <b>Own your number</b>\n\n"
+            f"Reach out directly and we'll arrange it.\n\n"
+            f"<i>Contact: @YourUsername</i>",  # Replace with your actual username
+            parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("⬅️ Back", callback_data="my_status")]]
+                [[InlineKeyboardButton("← Back", callback_data="my_status")]]
             )
         )
 
@@ -158,10 +152,10 @@ async def handle_claim(user, reply_fn, context):
     if not await is_subscribed(user.id, context):
         await reply_fn(
             NOT_SUBSCRIBED_MSG,
-            parse_mode="Markdown",
+            parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("📢 Join Channel", url=CHANNEL_INVITE_LINK)],
-                [InlineKeyboardButton("✅ Check Subscription", callback_data="claim_trial")]
+                [InlineKeyboardButton("Subscribe", url=CHANNEL_INVITE_LINK)],
+                [InlineKeyboardButton("Done — Check Me", callback_data="claim_trial")]
             ])
         )
         return
@@ -171,25 +165,24 @@ async def handle_claim(user, reply_fn, context):
         remaining = expires - datetime.utcnow()
         hours = int(remaining.total_seconds() // 3600)
         await reply_fn(
-            f"⚠️ *You already have an active trial!*\n\n"
-            f"📱 Your number: `{existing['number']}`\n"
-            f"⏳ Expires in: *{hours} hours*\n\n"
-            f"Enjoy your experience! ✨",
-            parse_mode="Markdown",
+            f"{TICK} <b>Active trial</b>\n\n"
+            f"<code>{existing['number']}</code>\n\n"
+            f"<i>Expires in {hours}h</i>",
+            parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("📋 View Status", callback_data="my_status")]]
+                [[InlineKeyboardButton("View Status", callback_data="my_status")]]
             )
         )
         return
 
     if db.has_used_trial(user.id):
         await reply_fn(
-            "🔒 *Trial already used*\n\n"
-            "You've already experienced a free trial.\n"
-            "Loved it? Contact us to get your own number permanently! 💎",
-            parse_mode="Markdown",
+            f"{CROSS} <b>Trial already used</b>\n\n"
+            f"You've experienced the free trial.\n"
+            f"<i>Reach out if you'd like to own a number permanently.</i>",
+            parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("💬 Contact to Buy", callback_data="extend_trial")]]
+                [[InlineKeyboardButton("Get in Touch", callback_data="extend_trial")]]
             )
         )
         return
@@ -197,27 +190,24 @@ async def handle_claim(user, reply_fn, context):
     number = db.assign_number(user.id)
     if not number:
         await reply_fn(
-            "😔 *No numbers available right now*\n\n"
-            "All our collectible numbers are currently on trial.\n"
-            "Check back soon — trials expire every 3 days!",
-            parse_mode="Markdown",
+            f"{CROSS} <b>No numbers available</b>\n\n"
+            f"All trials are currently active.\n"
+            f"<i>Check back in a few days — slots open as trials expire.</i>",
+            parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("🏠 Home", callback_data="back_home")]]
+                [[InlineKeyboardButton("Home", callback_data="back_home")]]
             )
         )
         return
 
     expires_at = datetime.utcnow() + timedelta(days=TRIAL_DAYS)
 
-    # Schedule expiry notification
     context.job_queue.run_once(
         notify_expiry,
         when=timedelta(days=TRIAL_DAYS),
         data={"user_id": user.id, "number": number},
         name=f"expire_{user.id}"
     )
-
-    # Schedule 12h warning
     context.job_queue.run_once(
         notify_warning,
         when=timedelta(days=TRIAL_DAYS) - timedelta(hours=12),
@@ -226,16 +216,14 @@ async def handle_claim(user, reply_fn, context):
     )
 
     await reply_fn(
-        f"🎉 *Your trial is now LIVE!*\n\n"
-        f"📱 *Your Collectible Number:*\n`{number}`\n\n"
-        f"⏳ *Trial Duration:* {TRIAL_DAYS} days\n"
-        f"📅 *Expires:* {expires_at.strftime('%d %b %Y, %H:%M')} UTC\n\n"
-        f"Feel the luxury. Feel the anonymity. 👑\n\n"
-        f"_You'll get a reminder 12 hours before expiry._",
-        parse_mode="Markdown",
+        f"{TICK} <b>Trial activated</b>\n\n"
+        f"<code>{number}</code>\n\n"
+        f"Valid for 72 hours · expires {expires_at.strftime('%d %b, %H:%M')} UTC\n\n"
+        f"<i>You'll be notified 12 hours before it ends.</i>",
+        parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("📋 My Status", callback_data="my_status")],
-            [InlineKeyboardButton("💬 Keep This Number", callback_data="extend_trial")]
+            [InlineKeyboardButton("Status", callback_data="my_status"),
+             InlineKeyboardButton("Keep This Number", callback_data="extend_trial")]
         ])
     )
 
@@ -246,20 +234,19 @@ async def show_status(user_id: int, reply_fn):
         used = db.has_used_trial(user_id)
         if used:
             msg = (
-                "📭 *No active trial*\n\n"
-                "Your previous trial has expired.\n"
-                "Want to own a number permanently? Let's talk! 💎"
+                f"{CROSS} <b>Trial expired</b>\n\n"
+                f"Your 72-hour window has closed.\n"
+                f"<i>Contact us to own a number permanently.</i>"
             )
-            keyboard = [[InlineKeyboardButton("💬 Get My Number", callback_data="extend_trial")]]
+            keyboard = [[InlineKeyboardButton("Get in Touch", callback_data="extend_trial")]]
         else:
             msg = (
-                "📭 *No active trial*\n\n"
-                "You haven't claimed your free trial yet!\n"
-                "Grab one now — it's completely free. ✨"
+                f"{DIAMOND} <b>No active trial</b>\n\n"
+                f"<i>You haven't claimed yours yet.</i>"
             )
-            keyboard = [[InlineKeyboardButton("💎 Claim Free Trial", callback_data="claim_trial")]]
+            keyboard = [[InlineKeyboardButton("Claim Free Trial", callback_data="claim_trial")]]
 
-        await reply_fn(msg, parse_mode="Markdown",
+        await reply_fn(msg, parse_mode="HTML",
                        reply_markup=InlineKeyboardMarkup(keyboard))
         return
 
@@ -274,16 +261,14 @@ async def show_status(user_id: int, reply_fn):
     progress_bar = "█" * progress_filled + "░" * (TRIAL_DAYS - progress_filled)
 
     await reply_fn(
-        f"📱 *Your Active Trial*\n\n"
-        f"Number: `{trial['number']}`\n\n"
-        f"⏳ Time Remaining:\n"
-        f"`{progress_bar}`\n"
-        f"*{days}d {hours}h {mins}m* left\n\n"
-        f"📅 Expires: {expires.strftime('%d %b %Y, %H:%M')} UTC",
-        parse_mode="Markdown",
+        f"{TICK} <b>Active trial</b>\n\n"
+        f"<code>{trial['number']}</code>\n\n"
+        f"<code>{progress_bar}</code>  {days}d {hours}h {mins}m remaining\n\n"
+        f"<i>Expires {expires.strftime('%d %b, %H:%M')} UTC</i>",
+        parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("💬 Keep This Number", callback_data="extend_trial")],
-            [InlineKeyboardButton("⬅️ Main Menu", callback_data="back_home")]
+            [InlineKeyboardButton("Keep This Number", callback_data="extend_trial"),
+             InlineKeyboardButton("Home", callback_data="back_home")]
         ])
     )
 
@@ -296,13 +281,13 @@ async def notify_warning(context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=data["user_id"],
             text=(
-                f"⏰ *12 Hours Left on Your Trial!*\n\n"
-                f"Your number `{data['number']}` expires in 12 hours.\n\n"
-                f"Loved the experience? Contact us to keep it! 💎"
+                f"{DIAMOND} <b>12 hours remaining</b>\n\n"
+                f"<code>{data['number']}</code> expires soon.\n\n"
+                f"<i>Want to keep it? Reach out before it's gone.</i>"
             ),
-            parse_mode="Markdown",
+            parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("💬 Keep My Number", callback_data="extend_trial")]]
+                [[InlineKeyboardButton("Keep This Number", callback_data="extend_trial")]]
             )
         )
     except Exception as e:
@@ -316,13 +301,13 @@ async def notify_expiry(context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=data["user_id"],
             text=(
-                f"⌛ *Your Trial Has Ended*\n\n"
-                f"Number `{data['number']}` has been returned to the pool.\n\n"
-                f"How was your experience? Want to own a premium number? Let's talk! 👑"
+                f"{CROSS} <b>Trial ended</b>\n\n"
+                f"<code>{data['number']}</code> has been returned to the pool.\n\n"
+                f"<i>Enjoyed the experience? It can be yours permanently.</i>"
             ),
-            parse_mode="Markdown",
+            parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton("💬 Get My Own Number", callback_data="extend_trial")]]
+                [[InlineKeyboardButton("Get in Touch", callback_data="extend_trial")]]
             )
         )
     except Exception as e:
