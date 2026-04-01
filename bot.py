@@ -47,7 +47,14 @@ async def is_subscribed(user_id: int, context: ContextTypes.DEFAULT_TYPE) -> boo
     except Exception:
         return False
 
-NOT_SUBSCRIBED_MSG = (
+NOT_ALLOWED_MSG = (
+    f"{CROSS} <b>Access restricted</b>\n"
+    f"──────────────────\n\n"
+    f"Free888 is currently invite-only.\n\n"
+    f"<i>If you believe you should have access, contact the owner.</i>"
+)
+
+
     f"{TG} <b>One last step</b>\n"
     f"──────────────────\n\n"
     f"Our free trials are exclusive to channel members.\n\n"
@@ -93,6 +100,10 @@ ABOUT_MSG = (
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     db.ensure_user(user.id, user.username or user.first_name)
+
+    if not db.is_whitelisted(user.id):
+        await update.message.reply_text(NOT_ALLOWED_MSG, parse_mode="HTML")
+        return
 
     keyboard = [
         [InlineKeyboardButton("✦  Claim Free Trial", callback_data="claim_trial")],
@@ -169,6 +180,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_claim(user, reply_fn, context):
+    # ── Step 0: Whitelist gate ──
+    if not db.is_whitelisted(user.id):
+        await reply_fn(NOT_ALLOWED_MSG, parse_mode="HTML")
+        return
+
     # ── Step 1: Channel subscription gate ──
     if not await is_subscribed(user.id, context):
         await reply_fn(
@@ -355,6 +371,29 @@ async def notify_expiry(context: ContextTypes.DEFAULT_TYPE):
 
 # ─── ADMIN COMMANDS ───────────────────────────────────────────────────────────
 
+async def admin_allow(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if str(update.effective_user.id) not in ADMIN_IDS:
+        return
+    if not context.args:
+        await update.message.reply_text("Usage: /allow &lt;user_id&gt; [note]", parse_mode="HTML")
+        return
+    user_id = int(context.args[0])
+    note = " ".join(context.args[1:]) if len(context.args) > 1 else ""
+    db.add_to_whitelist(user_id, note=note)
+    await update.message.reply_text(f"✅ User <code>{user_id}</code> whitelisted.", parse_mode="HTML")
+
+
+async def admin_revoke(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if str(update.effective_user.id) not in ADMIN_IDS:
+        return
+    if not context.args:
+        await update.message.reply_text("Usage: /revoke &lt;user_id&gt;", parse_mode="HTML")
+        return
+    user_id = int(context.args[0])
+    db.remove_from_whitelist(user_id)
+    await update.message.reply_text(f"🚫 User <code>{user_id}</code> revoked.", parse_mode="HTML")
+
+
 async def admin_add_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if str(update.effective_user.id) not in ADMIN_IDS:
         return
@@ -410,6 +449,8 @@ def main():
     app.add_handler(CommandHandler("status", status_command))
 
     # Admin commands
+    app.add_handler(CommandHandler("allow", admin_allow))
+    app.add_handler(CommandHandler("revoke", admin_revoke))
     app.add_handler(CommandHandler("addnumber", admin_add_number))
     app.add_handler(CommandHandler("listnumbers", admin_list_numbers))
     app.add_handler(CommandHandler("stats", admin_stats))
