@@ -108,7 +108,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     keyboard = [
-        [InlineKeyboardButton("✦  Claim Free Trial", callback_data="claim_trial")],
+        [InlineKeyboardButton("✦  Claim Free Trial", callback_data="view_pool")],
         [InlineKeyboardButton("◈  My Status", callback_data="my_status"),
          InlineKeyboardButton("◉  About", callback_data="about")],
     ]
@@ -150,6 +150,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data == "claim_trial":
         await handle_claim(user, reply, context)
 
+    elif data == "view_pool":
+        await show_pool(user.id, reply)
+
     elif data == "my_status":
         await show_status(user.id, reply)
 
@@ -160,7 +163,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data == "back_home":
         keyboard = [
-            [InlineKeyboardButton("✦  Claim Free Trial", callback_data="claim_trial")],
+            [InlineKeyboardButton("✦  Claim Free Trial", callback_data="view_pool")],
             [InlineKeyboardButton("◈  My Status", callback_data="my_status"),
              InlineKeyboardButton("◉  About", callback_data="about")],
         ]
@@ -179,6 +182,53 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 [[InlineKeyboardButton("‹  Back", callback_data="my_status")]]
             )
         )
+
+
+async def show_pool(user_id: int, reply_fn):
+    """Show number pool status before claiming."""
+    if not db.is_whitelisted(user_id):
+        await reply_fn(NOT_ALLOWED_MSG, parse_mode="HTML")
+        return
+
+    pool = db.get_pool_summary()
+    available = pool["available"]
+    taken = pool["taken"]
+
+    # Available numbers
+    if available:
+        avail_lines = "\n".join(
+            f"{TICK}  <code>{n['number']}</code>  <i>{n['label']}</i>"
+            for n in available
+        )
+    else:
+        avail_lines = f"<i>No numbers available right now.</i>"
+
+    # Taken numbers
+    if taken:
+        taken_lines = "\n".join(
+            f"{CROSS}  <code>{n['number']}</code>  <i>{n['hours_left']}h left</i>"
+            for n in taken
+        )
+    else:
+        taken_lines = f"<i>None on trial right now.</i>"
+
+    msg = (
+        f"{DIAMOND} <b>Number Pool</b>\n"
+        f"──────────────────\n\n"
+        f"<b>Available</b>  ({len(available)})\n"
+        f"{avail_lines}\n\n"
+        f"<b>On Trial</b>  ({len(taken)})\n"
+        f"{taken_lines}\n\n"
+        f"──────────────────\n"
+        f"<i>Tap below to claim your free number.</i>"
+    )
+
+    keyboard = []
+    if available:
+        keyboard.append([InlineKeyboardButton("✦  Claim My Number", callback_data="claim_trial")])
+    keyboard.append([InlineKeyboardButton("‹  Home", callback_data="back_home")])
+
+    await reply_fn(msg, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(keyboard))
 
 
 async def handle_claim(user, reply_fn, context):
