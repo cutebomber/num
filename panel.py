@@ -4,7 +4,8 @@ Run with: python panel.py
 Visit:    http://localhost:5000
 """
 
-from flask import Flask, render_template_string, request, redirect, url_for, session, flash
+from flask import Flask, request, redirect, session, flash, get_flashed_messages
+from markupsafe import Markup
 from database import Database
 from config import PANEL_PASSWORD
 from datetime import datetime
@@ -13,146 +14,105 @@ app = Flask(__name__)
 app.secret_key = "free888_secret_change_this"
 db = Database()
 
-# ─── AUTH ────────────────────────────────────────────────────────────────────
-
 def logged_in():
     return session.get("auth") is True
 
-# ─── TEMPLATE ────────────────────────────────────────────────────────────────
+def page(content_html, pg=""):
+    flashes = ""
+    for cat, msg in get_flashed_messages(with_categories=True):
+        css = "flash-ok" if cat == "ok" else "flash-err"
+        flashes += f'<div class="flash {css}">{msg}</div>'
 
-BASE = """<!DOCTYPE html>
+    nav = ""
+    if logged_in():
+        def active(p): return "active" if pg == p else ""
+        nav = f"""<nav>
+  <span class="nav-brand">◈ Free888 Panel</span>
+  <div class="nav-links">
+    <a href="/" class="{active('dash')}">Dashboard</a>
+    <a href="/numbers" class="{active('numbers')}">Numbers</a>
+    <a href="/users" class="{active('users')}">Access</a>
+  </div>
+  <form method="post" action="/logout" style="margin:0">
+    <button class="btn btn-ghost" type="submit">Sign out</button>
+  </form>
+</nav>"""
+
+    html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Free888 · Admin Panel</title>
 <style>
-  :root {
-    --bg: #0a0a0a;
-    --surface: #111111;
-    --border: #1e1e1e;
-    --accent: #c9a96e;
-    --accent2: #e8d5b0;
-    --text: #e0e0e0;
-    --muted: #555;
-    --green: #2d6a4f;
-    --green-light: #52b788;
-    --red: #6b2737;
-    --red-light: #e07a8a;
-    --radius: 8px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'SF Pro Text', -apple-system, sans-serif; font-size: 14px; min-height: 100vh; }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { color: var(--accent2); }
-
-  /* NAV */
-  nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; align-items: center; justify-content: space-between; height: 56px; }
-  .nav-brand { font-size: 15px; font-weight: 600; letter-spacing: 0.05em; color: var(--accent); }
-  .nav-links { display: flex; gap: 24px; }
-  .nav-links a { color: var(--muted); font-size: 13px; transition: color .2s; }
-  .nav-links a:hover, .nav-links a.active { color: var(--text); }
-  .nav-logout { font-size: 12px; color: var(--muted); cursor: pointer; background: none; border: none; }
-
-  /* LAYOUT */
-  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
-  .page-title { font-size: 22px; font-weight: 600; color: var(--accent2); margin-bottom: 6px; }
-  .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
-
-  /* STATS */
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 32px; }
-  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
-  .stat-val { font-size: 28px; font-weight: 700; color: var(--accent); }
-  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; letter-spacing: 0.04em; text-transform: uppercase; }
-
-  /* CARDS */
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 24px; overflow: hidden; }
-  .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-  .card-title { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
-
-  /* FORM */
-  .form-row { display: flex; gap: 10px; padding: 16px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-  input[type=text], input[type=password] {
-    background: var(--bg); border: 1px solid var(--border); color: var(--text);
-    border-radius: 6px; padding: 8px 12px; font-size: 13px; outline: none;
-    transition: border-color .2s;
-  }
-  input[type=text]:focus, input[type=password]:focus { border-color: var(--accent); }
-  input[type=text] { flex: 1; min-width: 160px; }
-  .btn { padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: opacity .15s; }
-  .btn:hover { opacity: 0.85; }
-  .btn-gold { background: var(--accent); color: #000; }
-  .btn-red { background: var(--red); color: var(--red-light); }
-  .btn-green { background: var(--green); color: var(--green-light); }
-  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
-
-  /* TABLE */
-  table { width: 100%; border-collapse: collapse; }
-  th { text-align: left; padding: 10px 20px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border-bottom: 1px solid var(--border); }
-  td { padding: 12px 20px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: rgba(255,255,255,0.02); }
-  .mono { font-family: 'SF Mono', monospace; font-size: 12px; color: var(--accent2); }
-  .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; }
-  .badge-green { background: rgba(82,183,136,0.12); color: var(--green-light); }
-  .badge-red   { background: rgba(224,122,138,0.12); color: var(--red-light); }
-  .badge-gold  { background: rgba(201,169,110,0.12); color: var(--accent); }
-  .badge-grey  { background: rgba(255,255,255,0.05); color: var(--muted); }
-  .actions { display: flex; gap: 6px; }
-
-  /* LOGIN */
-  .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-  .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 40px; width: 340px; }
-  .login-title { font-size: 20px; font-weight: 700; color: var(--accent); margin-bottom: 6px; }
-  .login-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
-  .login-box input { width: 100%; margin-bottom: 12px; padding: 10px 14px; }
-  .login-box .btn { width: 100%; padding: 10px; font-size: 14px; }
-
-  /* FLASH */
-  .flash { padding: 10px 20px; border-radius: 6px; margin-bottom: 20px; font-size: 13px; }
-  .flash-ok  { background: rgba(82,183,136,0.1); color: var(--green-light); border: 1px solid rgba(82,183,136,0.2); }
-  .flash-err { background: rgba(224,122,138,0.1); color: var(--red-light);   border: 1px solid rgba(224,122,138,0.2); }
-
-  .empty { padding: 32px; text-align: center; color: var(--muted); font-size: 13px; }
+  :root {{
+    --bg:#0a0a0a; --surface:#111; --border:#1e1e1e;
+    --accent:#c9a96e; --accent2:#e8d5b0;
+    --text:#e0e0e0; --muted:#555;
+    --green:#2d6a4f; --green-light:#52b788;
+    --red:#6b2737; --red-light:#e07a8a;
+    --radius:8px;
+  }}
+  *{{box-sizing:border-box;margin:0;padding:0}}
+  body{{background:var(--bg);color:var(--text);font-family:-apple-system,sans-serif;font-size:14px;min-height:100vh}}
+  a{{color:var(--accent);text-decoration:none}} a:hover{{color:var(--accent2)}}
+  nav{{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px}}
+  .nav-brand{{font-size:15px;font-weight:600;letter-spacing:.05em;color:var(--accent)}}
+  .nav-links{{display:flex;gap:24px}}
+  .nav-links a{{color:var(--muted);font-size:13px;transition:color .2s}}
+  .nav-links a:hover,.nav-links a.active{{color:var(--text)}}
+  .container{{max-width:1100px;margin:0 auto;padding:32px 24px}}
+  .page-title{{font-size:22px;font-weight:600;color:var(--accent2);margin-bottom:6px}}
+  .page-sub{{font-size:13px;color:var(--muted);margin-bottom:28px}}
+  .stats{{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:32px}}
+  .stat{{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px}}
+  .stat-val{{font-size:28px;font-weight:700;color:var(--accent)}}
+  .stat-label{{font-size:12px;color:var(--muted);margin-top:4px;letter-spacing:.04em;text-transform:uppercase}}
+  .card{{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:24px;overflow:hidden}}
+  .card-header{{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}}
+  .card-title{{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}}
+  .form-row{{display:flex;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center}}
+  input[type=text],input[type=password]{{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px 12px;font-size:13px;outline:none;transition:border-color .2s;flex:1;min-width:160px}}
+  input[type=text]:focus,input[type=password]:focus{{border-color:var(--accent)}}
+  .btn{{padding:8px 16px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:opacity .15s;white-space:nowrap}}
+  .btn:hover{{opacity:.85}}
+  .btn-gold{{background:var(--accent);color:#000}}
+  .btn-red{{background:var(--red);color:var(--red-light)}}
+  .btn-green{{background:var(--green);color:var(--green-light)}}
+  .btn-ghost{{background:transparent;border:1px solid var(--border);color:var(--muted)}}
+  table{{width:100%;border-collapse:collapse}}
+  th{{text-align:left;padding:10px 20px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:1px solid var(--border)}}
+  td{{padding:12px 20px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}}
+  tr:last-child td{{border-bottom:none}}
+  tr:hover td{{background:rgba(255,255,255,.02)}}
+  .mono{{font-family:'SF Mono',monospace;font-size:12px;color:var(--accent2)}}
+  .badge{{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:.03em}}
+  .badge-green{{background:rgba(82,183,136,.12);color:var(--green-light)}}
+  .badge-red{{background:rgba(224,122,138,.12);color:var(--red-light)}}
+  .badge-gold{{background:rgba(201,169,110,.12);color:var(--accent)}}
+  .badge-grey{{background:rgba(255,255,255,.05);color:var(--muted)}}
+  .actions{{display:flex;gap:6px}}
+  .login-wrap{{min-height:100vh;display:flex;align-items:center;justify-content:center}}
+  .login-box{{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:40px;width:340px}}
+  .login-title{{font-size:20px;font-weight:700;color:var(--accent);margin-bottom:6px}}
+  .login-sub{{font-size:13px;color:var(--muted);margin-bottom:28px}}
+  .login-box input{{width:100%;margin-bottom:12px;padding:10px 14px}}
+  .login-box .btn{{width:100%;padding:10px;font-size:14px}}
+  .flash{{padding:10px 20px;border-radius:6px;margin-bottom:20px;font-size:13px}}
+  .flash-ok{{background:rgba(82,183,136,.1);color:var(--green-light);border:1px solid rgba(82,183,136,.2)}}
+  .flash-err{{background:rgba(224,122,138,.1);color:var(--red-light);border:1px solid rgba(224,122,138,.2)}}
+  .empty{{padding:32px;text-align:center;color:var(--muted);font-size:13px}}
 </style>
 </head>
 <body>
-{% if logged_in %}
-<nav>
-  <span class="nav-brand">◈ Free888 Panel</span>
-  <div class="nav-links">
-    <a href="/" class="{{ 'active' if page=='dash' }}">Dashboard</a>
-    <a href="/numbers" class="{{ 'active' if page=='numbers' }}">Numbers</a>
-    <a href="/users" class="{{ 'active' if page=='users' }}">Access</a>
-  </div>
-  <form method="post" action="/logout" style="margin:0">
-    <button class="nav-logout btn-ghost btn" type="submit">Sign out</button>
-  </form>
-</nav>
-{% endif %}
+{nav}
 <div class="container">
-{% for msg, cat in get_flashed_messages(with_categories=True) %}
-  <div class="flash flash-{{ 'ok' if cat=='ok' else 'err' }}">{{ msg }}</div>
-{% endfor %}
-{{ content }}
+{flashes}
+{content_html}
 </div>
 </body>
 </html>"""
-
-
-def render(content, page="", **kwargs):
-    return render_template_string(
-        BASE, content=content, page=page,
-        logged_in=logged_in(),
-        get_flashed_messages=flash.__class__,  # placeholder
-        **kwargs
-    )
-
-
-# Use Jinja2 properly
-from flask import render_template_string as _rts
-def page(content_html, pg=""):
-    return _rts(BASE, content=content_html, page=pg, logged_in=logged_in())
+    return html
 
 
 # ─── ROUTES ──────────────────────────────────────────────────────────────────
