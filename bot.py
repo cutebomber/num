@@ -55,6 +55,7 @@ NOT_ALLOWED_MSG = (
 )
 
 
+NOT_SUBSCRIBED_MSG = (
     f"{TG} <b>One last step</b>\n"
     f"──────────────────\n\n"
     f"Our free trials are exclusive to channel members.\n\n"
