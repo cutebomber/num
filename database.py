@@ -198,6 +198,26 @@ class Database:
             ).fetchall()
             return [dict(r) for r in rows]
 
+    def get_pool_summary(self) -> dict:
+        """Returns lists of available and taken numbers for display."""
+        with self._conn() as conn:
+            rows = conn.execute(
+                """SELECT number, label, assigned_to, expires_at, is_active
+                   FROM numbers ORDER BY id ASC"""
+            ).fetchall()
+            available = []
+            taken = []
+            for r in rows:
+                if not r["is_active"]:
+                    continue
+                if r["assigned_to"] and r["expires_at"]:
+                    expires = datetime.fromisoformat(r["expires_at"])
+                    hrs = max(0, int((expires - datetime.utcnow()).total_seconds() // 3600))
+                    taken.append({"number": r["number"], "label": r["label"], "hours_left": hrs})
+                else:
+                    available.append({"number": r["number"], "label": r["label"]})
+            return {"available": available, "taken": taken}
+
     # ── STATS ────────────────────────────────────────────────────────────────
 
     def get_stats(self) -> Dict:
