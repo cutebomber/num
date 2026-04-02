@@ -315,8 +315,7 @@ async def show_status(user_id: int, reply_fn):
         f"{DIAMOND}  <i>Expires {expires.strftime('%d %b %Y, %H:%M')} UTC</i>",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("✦  Keep This Number", callback_data="extend_trial"),
-             InlineKeyboardButton("‹  Home", callback_data="back_home")]
+            [InlineKeyboardButton("‹  Home", callback_data="back_home")]
         ])
     )
 
