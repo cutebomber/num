@@ -202,27 +202,49 @@ def numbers():
             active = request.form.get("active") == "1"
             db.toggle_number(nid, active)
             flash("Number updated.", "ok")
+        elif action == "release":
+            uid = request.form.get("user_id")
+            if uid:
+                db.expire_trial(int(uid))
+                flash("Trial released — number is now available.", "ok")
         return redirect("/numbers")
 
     all_numbers = db.list_all_numbers()
     rows = ""
     for n in all_numbers:
+        nid = n["id"]
         if n["assigned_to"] and n["expires_at"]:
             expires = datetime.fromisoformat(n["expires_at"])
             remaining = expires - datetime.utcnow()
             hrs = max(0, int(remaining.total_seconds() // 3600))
             status = f'<span class="badge badge-gold">On Trial · {hrs}h left</span>'
             assigned = f'<span class="mono">User {n["assigned_to"]}</span>'
+            action_btns = f"""
+              <form method="post" style="display:inline" onsubmit="return confirm('Force-release this number?')">
+                <input type="hidden" name="action" value="release">
+                <input type="hidden" name="user_id" value="{n['assigned_to']}">
+                <button class="btn btn-red" type="submit">Release</button>
+              </form>"""
         elif not n["is_active"]:
-            status = '<span class="badge badge-grey">Disabled</span>'
+            status = '<span class="badge badge-grey">Unavailable</span>'
             assigned = "—"
+            action_btns = f"""
+              <form method="post" style="display:inline">
+                <input type="hidden" name="action" value="toggle">
+                <input type="hidden" name="id" value="{nid}">
+                <input type="hidden" name="active" value="1">
+                <button class="btn btn-green" type="submit">Mark Available</button>
+              </form>"""
         else:
             status = '<span class="badge badge-green">Available</span>'
             assigned = "—"
-
-        toggle_label = "Enable" if not n["is_active"] else "Disable"
-        toggle_active = "1" if not n["is_active"] else "0"
-        toggle_cls = "btn-green" if not n["is_active"] else "btn-ghost"
+            action_btns = f"""
+              <form method="post" style="display:inline">
+                <input type="hidden" name="action" value="toggle">
+                <input type="hidden" name="id" value="{nid}">
+                <input type="hidden" name="active" value="0">
+                <button class="btn btn-ghost" type="submit">Mark Unavailable</button>
+              </form>"""
 
         rows += f"""<tr>
           <td class='mono'>{n['number']}</td>
@@ -230,33 +252,41 @@ def numbers():
           <td>{status}</td>
           <td>{assigned}</td>
           <td><div class="actions">
-            <form method="post"><input type="hidden" name="action" value="toggle">
-              <input type="hidden" name="id" value="{n['id']}">
-              <input type="hidden" name="active" value="{toggle_active}">
-              <button class="btn {toggle_cls}" type="submit">{toggle_label}</button></form>
-            <form method="post" onsubmit="return confirm('Remove this number?')">
+            {action_btns}
+            <form method="post" style="display:inline" onsubmit="return confirm('Permanently remove?')">
               <input type="hidden" name="action" value="remove">
-              <input type="hidden" name="id" value="{n['id']}">
-              <button class="btn btn-red" type="submit">Remove</button></form>
+              <input type="hidden" name="id" value="{nid}">
+              <button class="btn btn-red" type="submit">Remove</button>
+            </form>
           </div></td>
         </tr>"""
 
+    av  = len([n for n in all_numbers if not n["assigned_to"] and n["is_active"]])
+    ot  = len([n for n in all_numbers if n["assigned_to"]])
+    una = len([n for n in all_numbers if not n["is_active"]])
+
     content = f"""
     <div class="page-title">Numbers</div>
-    <div class="page-sub">Manage the pool of anonymous &amp; collectible numbers</div>
+    <div class="page-sub">Manage your anonymous &amp; collectible number pool</div>
     <div class="card">
       <div class="card-header"><span class="card-title">Add Number</span></div>
       <form method="post" class="form-row">
         <input type="hidden" name="action" value="add">
-        <input type="text" name="number" placeholder="+1234567890 (with country code)" required>
-        <input type="text" name="label" placeholder="Label e.g. Collectible 888" style="max-width:240px">
+        <input type="text" name="number" placeholder="+1234567890  (with country code)" required>
+        <input type="text" name="label" placeholder="Label — e.g. Collectible 888" style="max-width:260px">
         <button class="btn btn-gold" type="submit">Add Number</button>
       </form>
     </div>
     <div class="card">
-      <div class="card-header"><span class="card-title">Number Pool ({len(all_numbers)})</span></div>
-      <table><thead><tr><th>Number</th><th>Label</th><th>Status</th><th>Assigned To</th><th>Actions</th></tr></thead>
-      <tbody>{rows if rows else "<tr><td colspan=5 class='empty'>No numbers yet. Add one above.</td></tr>"}</tbody>
+      <div class="card-header">
+        <span class="card-title">Number Pool ({len(all_numbers)})</span>
+        <span style="font-size:12px;color:var(--muted)">
+          {av} available &nbsp;·&nbsp; {ot} on trial &nbsp;·&nbsp; {una} unavailable
+        </span>
+      </div>
+      <table>
+        <thead><tr><th>Number</th><th>Label</th><th>Status</th><th>Assigned To</th><th>Actions</th></tr></thead>
+        <tbody>{rows if rows else "<tr><td colspan=5 class='empty'>No numbers yet. Add one above.</td></tr>"}</tbody>
       </table>
     </div>"""
     return page(content, "numbers")
