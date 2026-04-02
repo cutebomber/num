@@ -33,7 +33,7 @@ TICK     = E("5985596818912712352", "✅")
 CROSS    = E("5985346521103604145", "❌")
 TG       = E("5875465628285931233", "✈")
 DIAMOND  = E("6028530359975548369", "💎")
-CROWN    = E("5807868868886009920", "👑")
+PIRATE   = E("5386372293263892965", "🏴‍☠️")
 
 # ─── HELPERS ─────────────────────────────────────────────────────────────────
 
@@ -83,7 +83,7 @@ WELCOME_MSG = (
 ABOUT_MSG = (
     f"{CROWN} <b>What makes these numbers special?</b>\n"
     f"──────────────────\n\n"
-    f"{DIAMOND}  <b>Collectible</b> — rare patterns like 888, 777, 111.\n"
+    f"{PIRATE}  <b>Collectible</b> — exclusively yours for 72 hours.\n"
     f"{TG}  <b>Anonymous</b> — no name, no trace, clean history.\n"
     f"{TICK}  <b>Yours to trial</b> — 72 hours, completely free.\n\n"
     f"──────────────────\n\n"
