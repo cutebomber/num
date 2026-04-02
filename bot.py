@@ -266,7 +266,7 @@ async def handle_claim(user, reply_fn, context):
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("◈  My Status", callback_data="my_status"),
-             InlineKeyboardButton("✦  Keep This Number", callback_data="extend_trial")]
+             InlineKeyboardButton("‹  Home", callback_data="back_home")]
         ])
     )
 
